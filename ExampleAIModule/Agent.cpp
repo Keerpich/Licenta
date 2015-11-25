@@ -13,6 +13,8 @@ Agent::Agent(StateContainer *container, BWAPI::Unit unit)
 
 	BWAPI::Unitset allEnemies = BWAPI::Broodwar->enemy()->getUnits();
 
+	framesPassed = 0;
+	framesNeeded = 0;
 	int enemiesHp = 0;
 	currentAction = Action::Fight;
 	gammaFactor = 0.9f;
@@ -44,6 +46,8 @@ Agent::Agent(StateContainer *container, BWAPI::Unit unit, float epsilon)
 	learningFactor = 0.05f;
 	explorationEpsilon = epsilon;
 	gammaFactor = 0.9f;
+	framesPassed = 0;
+	framesNeeded = 0;
 
 	srand(time(NULL));
 
@@ -71,6 +75,8 @@ Agent& Agent::operator=(Agent &other)
 	this->thisUnit = other.thisUnit;
 	this->currentAction = other.currentAction;
 	this->gammaFactor = other.gammaFactor;
+	this->framesNeeded = other.framesNeeded;
+	this->framesPassed = other.framesPassed;
 
 	return *this;
 }
@@ -117,7 +123,7 @@ DistanceToEnemy Agent::getDistanceToClosestEnemy()
 	BWAPI::Unit closestEnemy = getClosestEnemy();
 	int dToClosestEnemy = thisUnit->getDistance(closestEnemy);
 
-	double speedInThirtyFrames = thisUnit->getType().topSpeed() * 10; //return top speed/frame
+	double speedInThirtyFrames = thisUnit->getType().topSpeed() * 18; //return top speed/frame
 
 	double distancePercent = dToClosestEnemy * 100.f / (float)speedInThirtyFrames;
 
@@ -181,12 +187,27 @@ void Agent::Attack()
 		}
 
 		if (lowestHPEnemyInRange != nullptr)
+		{
 			thisUnit->attack(lowestHPEnemyInRange);
+			//framesNeeded = (thisUnit->getDistance(lowestHPEnemyInRange) - thisUnit->getType().groundWeapon().maxRange()) / thisUnit->getType().topSpeed();
+			framesNeeded = 15;
+			framesPassed = 0;
+
+			//BWAPI::Broodwar->sendText("frames needed: %i", framesNeeded);
+		}
 		else
 		{
 			BWAPI::Unit closestEnemy = getClosestEnemy();
 			if (closestEnemy)
+			{
 				thisUnit->attack(closestEnemy);
+				framesNeeded = (thisUnit->getDistance(closestEnemy) - thisUnit->getType().groundWeapon().maxRange()) / (thisUnit->getType().topSpeed() + closestEnemy->getType().topSpeed()) - 3;
+				framesNeeded = framesNeeded > 15 ? framesNeeded : 15;
+				framesPassed = 0;
+
+
+				//BWAPI::Broodwar->sendText("frames needed: %i", framesNeeded);
+			}
 		}
 	}
 }
@@ -215,21 +236,27 @@ void Agent::Flee()
 			Vector2 enemyPosition(e->getPosition().x, e->getPosition().y);
 			Vector2 vecEnemyToMe = myPosition - enemyPosition;
 			float distanceSq = vecEnemyToMe.lenSq();
-			if (distanceSq > 0 && e->isInWeaponRange(thisUnit))//distanceSq < 400000)
+			if (distanceSq > 0 && thisUnit->isInWeaponRange(e))//distanceSq < 400000)
 			{
 				vecResult = vecResult + vecEnemyToMe.normalize();
 			}
 
 		}
 
+		framesNeeded = 0;
+		framesPassed = 0;
+
 		if (vecResult.lenSq() == 0)
 			return;
 
 		vecResult.normalize();
 
-		vecResult = myPosition + vecResult * 100;
+		vecResult = myPosition + vecResult * 300;
 
 		thisUnit->move(BWAPI::Position(vecResult.getX(), vecResult.getY()));
+
+		framesNeeded = (int)(300 / thisUnit->getType().topSpeed()) + 1;
+		framesPassed = 0;
 	}
 }
 
@@ -250,6 +277,10 @@ Action Agent::decideOnAction()
 ///<summary>Handle this agent's update</summary>
 void Agent::Update()
 {
+	if (framesPassed++ < framesNeeded)
+	{
+		return;
+	}
 	float currentStateActionEstimatedReward = currentState->getActionValue(currentAction);
 	
 	auto nextState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus());

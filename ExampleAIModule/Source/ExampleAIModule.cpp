@@ -23,7 +23,7 @@ void ExampleAIModule::onStart()
 	rnd_file << roundCount;
 
 	BWAPI::Broodwar->enableFlag(BWAPI::Flag::CompleteMapInformation);
-	BWAPI::Broodwar->setLocalSpeed(0);
+	//BWAPI::Broodwar->setLocalSpeed(0);
 
 	Broodwar->sendText("Round Count: %i", roundCount);
 
@@ -90,14 +90,17 @@ void ExampleAIModule::onEnd(bool isWinner)
 
 void ExampleAIModule::onFrame()
 {
-	static int lastCommand = 10;
-	lastCommand++;
-	if (lastCommand > 10)
-	{
-		lastCommand = 0;
-		if (vultureAgent.isInitialized())
-			vultureAgent.Update();
-	}
+	//static int lastCommand = 10;
+	//lastCommand++;
+	//if (lastCommand > 10)
+	//{
+	//	lastCommand = 0;
+	//	if (vultureAgent.isInitialized())
+	//		vultureAgent.Update();
+	//}
+
+	if (vultureAgent.isInitialized())
+		vultureAgent.Update();
 }
 
 void ExampleAIModule::onSendText(std::string text)

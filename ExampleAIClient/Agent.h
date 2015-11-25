@@ -14,6 +14,9 @@ private:
 	StateContainer *state_container;
 	BWAPI::Unit thisUnit;
 
+	int framesPassed;
+	int framesNeeded;
+
 	float explorationEpsilon;
 	float learningFactor;
 	float gammaFactor;
