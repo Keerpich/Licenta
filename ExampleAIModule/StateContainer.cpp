@@ -85,7 +85,7 @@ void StateContainer::LoadStates()
 			{
 				State s1(false, i, k, j);
 				State s2(true, i, k, j);
-				int s1_run, s1_fight, s2_run, s2_fight;
+				float s1_run, s1_fight, s2_run, s2_fight;
 				saveFile >> s1_run >> s1_fight >> s2_run >> s2_fight;
 
 				s1.setRunValue(s1_run);
