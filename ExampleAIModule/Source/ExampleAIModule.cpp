@@ -23,7 +23,7 @@ void ExampleAIModule::onStart()
 	rnd_file << roundCount;
 
 	BWAPI::Broodwar->enableFlag(BWAPI::Flag::CompleteMapInformation);
-	//BWAPI::Broodwar->setLocalSpeed(0);
+	BWAPI::Broodwar->setLocalSpeed(0);
 
 	Broodwar->sendText("Round Count: %i", roundCount);
 
