@@ -28,18 +28,21 @@ private:
 	DistanceToEnemy getDistanceToClosestEnemy();
 
 	BWAPI::Unit getClosestEnemy();
+	BWAPI::Unit getClosestAlly();
 
 	HealthOfUnit getHealthStatus();
 	bool isWeaponOnCooldown();
 	int numberOfEnemiesInRange();
 	BWAPI::Unitset getEnemiesInRange();
+	BWAPI::Unitset getAlliesInRange();
 
 	Action decideOnAction();
 	int currentReward();
 
 	void TakeAction(Action action);
 
-	void Attack();
+	void AttackAlly();
+	void AttackEnemy();
 	void Flee();
 public:
 	void Update();

@@ -9,25 +9,37 @@ State::State(bool isWoc, DistanceToEnemy dToE, int noOfEIR, HealthOfUnit hp)
 	agentHealth = hp;
 
 	runStateValue = 0.f;
-	fightStateValue = 0.f;
-}
-
-void State::setRunValue(float value)
-{
-	runStateValue = value;
+	fightEnemyStateValue = 0.f;
+	fightAllyStateValue = 0.f;
 }
 
 float State::getActionValue(Action action) const
 {
-	return action == Action::Fight ? getFightValue() : getRunValue();
+	switch (action)
+	{
+	case FightEnemy:
+		return fightEnemyStateValue;
+		break;
+	case FightAlly:
+		return fightAllyStateValue;
+		break;
+	case Run:
+		return runStateValue;
+		break;
+	}
+	//return action == Action::Fight ? getFightValue() : getRunValue();
 }
 
 void State::influenceValue(Action action, float value)
 {
 	//inversing them because it might really be better this way
-	if (action == Action::Fight)
+	if (action == Action::FightEnemy)
 	{
-		fightStateValue += value;
+		fightEnemyStateValue += value;
+	}
+	else if (action == Action::FightAlly)
+	{
+		fightAllyStateValue += value;
 	}
 	else
 	{
@@ -35,9 +47,19 @@ void State::influenceValue(Action action, float value)
 	}
 }
 
-void State::setFightValue(float value)
+void State::setRunValue(float value)
 {
-	fightStateValue = value;
+	runStateValue = value;
+}
+
+void State::setFightEnemyValue(float value)
+{
+	fightEnemyStateValue = value;
+}
+
+void State::setFightAllyValue(float value)
+{
+	fightAllyStateValue = value;
 }
 
 float State::getRunValue() const
@@ -45,9 +67,14 @@ float State::getRunValue() const
 	return runStateValue;
 }
 
-float State::getFightValue() const
+float State::getFightEnemyValue() const
 {
-	return fightStateValue;
+	return fightEnemyStateValue;
+}
+
+float State::getFightAllyValue() const
+{
+	return fightAllyStateValue;
 }
 
 bool State::operator==(State& state)
@@ -68,8 +95,10 @@ bool State::operator==(const State& state)
 
 Action State::getBestAction() const
 {
-	if (fightStateValue >= runStateValue)
-		return Action::Fight;
+	if (fightEnemyStateValue >= fightAllyStateValue && fightEnemyStateValue >= runStateValue)
+		return Action::FightEnemy;
+	else if (fightAllyStateValue >= fightEnemyStateValue && fightAllyStateValue >= runStateValue)
+		return Action::FightAlly;
 	else
 		return Action::Run;
 }

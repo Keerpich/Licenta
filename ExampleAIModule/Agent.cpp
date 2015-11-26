@@ -16,7 +16,7 @@ Agent::Agent(StateContainer *container, BWAPI::Unit unit)
 	framesPassed = 0;
 	framesNeeded = 0;
 	int enemiesHp = 0;
-	currentAction = Action::Fight;
+	currentAction = Action::FightEnemy;
 	gammaFactor = 0.9f;
 	learningFactor = 0.05f;
 	explorationEpsilon = 100.f;
@@ -42,7 +42,7 @@ Agent::Agent(StateContainer *container, BWAPI::Unit unit, float epsilon)
 	BWAPI::Unitset allEnemies = BWAPI::Broodwar->enemy()->getUnits();
 
 	int enemiesHp = 0;
-	currentAction = Action::Fight;
+	currentAction = Action::FightEnemy;
 	learningFactor = 0.05f;
 	explorationEpsilon = epsilon;
 	gammaFactor = 0.9f;
@@ -116,6 +116,13 @@ BWAPI::Unit Agent::getClosestEnemy()
 	return thisUnit->getClosestUnit(BWAPI::Filter::Exists && BWAPI::Filter::IsEnemy);
 }
 
+///<summar>Returns the closest ally to the agent</summary>
+BWAPI::Unit Agent::getClosestAlly()
+{
+	return thisUnit->getClosestUnit(BWAPI::Filter::Exists && BWAPI::Filter::IsAlly);
+}
+
+
 /// <summary> Returns the distance, converted to DistanceToEnemy enum, to the closest enemy</summary>
 /// <returns> Returns the distance, converted to DistanceToEnemy enum, to the closest enemy</returns>
 DistanceToEnemy Agent::getDistanceToClosestEnemy()
@@ -155,22 +162,76 @@ int Agent::numberOfEnemiesInRange()
 int Agent::currentReward()
 {
 	BWAPI::Unitset allEnemies = BWAPI::Broodwar->enemy()->getUnits();
+	BWAPI::Unitset allAllies = BWAPI::Broodwar->self()->getUnits();
+
 
 	int enemiesHp = 0;
+	int alliesHp = 0;
+
+	for (auto &a : allAllies)
+	{
+		alliesHp += a->getHitPoints();
+	}
 
 	for (auto& e : allEnemies)
 	{
 		enemiesHp += e->getHitPoints();
 	}
 
-	int currentHpDifference = enemiesHp - thisUnit->getHitPoints();
+	int currentHpDifference = enemiesHp - alliesHp;//thisUnit->getHitPoints();
 	int reward = lastHpDifference - currentHpDifference;
 	lastHpDifference = currentHpDifference;
 	return reward;
 }
 
+///<summary>Issues the attack on the most hurt ally in the agent's range. If there is no ally in range attack the closest one from the whole map</summary>
+void Agent::AttackAlly()
+{
+	if (thisUnit->canAttack())
+	{
+		BWAPI::Unitset alliesInRange = getAlliesInRange();
+		BWAPI::Unit lowestHPAllyInRange = nullptr;
+		int minHp = 99999;
+		for (BWAPI::Unit u : alliesInRange)
+		{
+			if (u->getHitPoints() < minHp)
+			{
+				minHp = u->getHitPoints();
+				lowestHPAllyInRange = u;
+			}
+		}
+
+		if (lowestHPAllyInRange != nullptr)
+		{
+
+			//BWAPI::Broodwar->sendText("%i %i", lowestHPAllyInRange->getID(), thisUnit->getID());
+			thisUnit->attack(lowestHPAllyInRange);
+			//framesNeeded = (thisUnit->getDistance(lowestHPEnemyInRange) - thisUnit->getType().groundWeapon().maxRange()) / thisUnit->getType().topSpeed();
+			framesNeeded = 15;
+			framesPassed = 0;
+
+			//BWAPI::Broodwar->sendText("frames needed: %i", framesNeeded);
+		}
+		else
+		{
+			BWAPI::Unit closestAlly = getClosestAlly();
+			//BWAPI::Broodwar->sendText("%i %i", closestAlly->getID(), thisUnit->getID());
+			if (closestAlly)
+			{
+				thisUnit->attack(closestAlly);
+				framesNeeded = (thisUnit->getDistance(closestAlly) - thisUnit->getType().groundWeapon().maxRange()) / (thisUnit->getType().topSpeed() + closestAlly->getType().topSpeed()) - 3;
+				framesNeeded = framesNeeded > 15 ? framesNeeded : 15;
+				framesPassed = 0;
+
+
+				//BWAPI::Broodwar->sendText("frames needed: %i", framesNeeded);
+			}
+		}
+	}
+}
+
 ///<summary>Issues the attack on the most hurt enemy in the agent's range. If there is no enemy in range attack the closest one from the whole map</summary>
-void Agent::Attack()
+void Agent::AttackEnemy()
 {
 	if (thisUnit->canAttack())
 	{
@@ -216,6 +277,12 @@ void Agent::Attack()
 BWAPI::Unitset Agent::getEnemiesInRange()
 {
 	return thisUnit->getUnitsInWeaponRange(thisUnit->getType().groundWeapon(), BWAPI::Filter::IsEnemy && BWAPI::Filter::Exists);
+}
+
+///<summary>Returns all enemies in range of the agent</summary>
+BWAPI::Unitset Agent::getAlliesInRange()
+{
+	return thisUnit->getUnitsInWeaponRange(thisUnit->getType().groundWeapon(), BWAPI::Filter::IsAlly && BWAPI::Filter::Exists);
 }
 
 ///<summary>Makes the agent run in the best direction in order to avoid enemy units as best as possible</summary>
@@ -266,7 +333,7 @@ Action Agent::decideOnAction()
 	int random = rand() % 100 + 1;
 	if (random <= explorationEpsilon)
 	{
-		return (Action)(rand() % 2);
+		return (Action)(rand() % 3);
 	}
 	else
 	{
@@ -277,6 +344,9 @@ Action Agent::decideOnAction()
 ///<summary>Handle this agent's update</summary>
 void Agent::Update()
 {
+	if (!thisUnit->exists())
+		return;
+	
 	if (framesPassed++ < framesNeeded)
 	{
 		return;
@@ -284,7 +354,7 @@ void Agent::Update()
 	float currentStateActionEstimatedReward = currentState->getActionValue(currentAction);
 	
 	auto nextState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus());
-	float nextStateMaxReward = nextState->getFightValue() > nextState->getRunValue() ? nextState->getFightValue() : nextState->getRunValue();
+	float nextStateMaxReward = nextState->getActionValue(nextState->getBestAction());//nextState->getFightValue() > nextState->getRunValue() ? nextState->getFightValue() : nextState->getRunValue();
 
 	float watkinsReward = learningFactor * (currentReward() + gammaFactor * nextStateMaxReward - currentStateActionEstimatedReward);
 
@@ -300,14 +370,19 @@ void Agent::Update()
 void Agent::TakeAction(Action action)
 {
 	//std::ofstream action_log_file("actions.log");
-	if (action == Action::Fight)
+	if (action == Action::FightEnemy)
 	{
-		BWAPI::Broodwar->sendText("Attacking");
-		Attack();
+		BWAPI::Broodwar->sendText("%i is Attacking Enemy", thisUnit->getID());
+		AttackEnemy();
 	}	
+	else if (action == Action::FightAlly)
+	{
+		BWAPI::Broodwar->sendText("%i is Attacking Ally", thisUnit->getID());
+		AttackAlly();
+	}
 	else
 	{
-		BWAPI::Broodwar->sendText("Fleeing");
+		BWAPI::Broodwar->sendText("%i is Fleeing", thisUnit->getID());
 		Flee();
 	}
 }

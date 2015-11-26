@@ -6,8 +6,8 @@
 using namespace BWAPI;
 using namespace Filter;
 
-StateContainer state_container(8);
-Agent vultureAgent;
+StateContainer state_container(32);
+vector<Agent> vultureAgents;
 int ExampleAIModule::roundCount = 0;
 
 void ExampleAIModule::onStart()
@@ -28,20 +28,27 @@ void ExampleAIModule::onStart()
 	Broodwar->sendText("Round Count: %i", roundCount);
 
 	Unitset units = Broodwar->self()->getUnits();
-	Unit vultureUnit;
+	std::vector<Unit> vultureUnits;
 	for (auto& u : units)
 	{
-		int id = (*units.begin())->getID();
-		vultureUnit = Broodwar->getUnit(id);
+		int id = u->getID();
+		Unit vultureUnit = Broodwar->getUnit(id);
 		if (vultureUnit->getType() == UnitTypes::Terran_Vulture)
-			break;
+		{
+			vultureUnits.push_back(vultureUnit);
+		}
 	}
 
-	if (roundCount > 1000)
-		vultureAgent = Agent(&state_container, vultureUnit, 0.f);
-	else
-		vultureAgent = Agent(&state_container, vultureUnit, 100 - (roundCount / 10.f));
+	for (int i = 0; i < vultureUnits.size(); i++)
+	{
+		Agent vultureAgent;
+		if (roundCount > 1000)
+			vultureAgent = Agent(&state_container, vultureUnits[i], 0.f);
+		else
+			vultureAgent = Agent(&state_container, vultureUnits[i], 100 - (roundCount / 10.f));
 
+		vultureAgents.push_back(vultureAgent);
+	}
   // Set the command optimization level so that common commands can be grouped
   // and reduce the bot's APM (Actions Per Minute).
   
@@ -99,8 +106,11 @@ void ExampleAIModule::onFrame()
 	//		vultureAgent.Update();
 	//}
 
-	if (vultureAgent.isInitialized())
-		vultureAgent.Update();
+	for (auto& a : vultureAgents)
+	{
+		if (a.isInitialized())
+			a.Update();
+	}
 }
 
 void ExampleAIModule::onSendText(std::string text)
