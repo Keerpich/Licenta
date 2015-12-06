@@ -65,7 +65,7 @@ void StateContainer::SaveStates()
 
 	for (vector<State>::const_iterator it = states.begin(); it != states.end(); it++)
 	{
-		saveFile << it->getRunValue() << " " << it->getFightValue() << " ";
+		saveFile << it->getRunValue() << " " << it->getFightValue() << " " << it->getDeployMineValue() << " ";
 	}
 
 	saveFile << endl;
@@ -85,14 +85,16 @@ void StateContainer::LoadStates()
 			{
 				State s1(false, i, k, j);
 				State s2(true, i, k, j);
-				float s1_run, s1_fight, s2_run, s2_fight;
-				saveFile >> s1_run >> s1_fight >> s2_run >> s2_fight;
+				float s1_run, s1_fight, s1_deploy, s2_run, s2_fight, s2_deploy;
+				saveFile >> s1_run >> s1_fight >> s1_deploy >> s2_run >> s2_fight >> s2_deploy;
 
 				s1.setRunValue(s1_run);
 				s1.setFightValue(s1_fight);
+				s1.setDeployMineValue(s1_deploy);
 
 				s2.setRunValue(s2_run);
 				s2.setFightValue(s2_fight);
+				s2.setDeployMineValue(s2_deploy);
 
 				states.push_back(s1);
 				states.push_back(s2);

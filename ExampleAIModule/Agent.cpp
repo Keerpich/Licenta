@@ -218,6 +218,21 @@ BWAPI::Unitset Agent::getEnemiesInRange()
 	return thisUnit->getUnitsInWeaponRange(thisUnit->getType().groundWeapon(), BWAPI::Filter::IsEnemy && BWAPI::Filter::Exists);
 }
 
+
+void Agent::Deploy()
+{
+	framesNeeded = 0;
+	framesPassed = 0;
+
+	if (thisUnit->canUseTech(BWAPI::TechTypes::Spider_Mines, thisUnit->getPosition()))
+	{
+		if (thisUnit->useTech(BWAPI::TechTypes::Spider_Mines, thisUnit->getPosition()))
+		{
+			framesNeeded = 20;
+		}
+	}
+}
+
 ///<summary>Makes the agent run in the best direction in order to avoid enemy units as best as possible</summary>
 void Agent::Flee()
 {
@@ -266,7 +281,7 @@ Action Agent::decideOnAction()
 	int random = rand() % 100 + 1;
 	if (random <= explorationEpsilon)
 	{
-		return (Action)(rand() % 2);
+		return (Action)(rand() % 3);
 	}
 	else
 	{
@@ -305,6 +320,11 @@ void Agent::TakeAction(Action action)
 		BWAPI::Broodwar->sendText("Attacking");
 		Attack();
 	}	
+	else if (action == Action::DeployMine)
+	{
+		BWAPI::Broodwar->sendText("Deploying Mine");
+		Deploy();
+	}
 	else
 	{
 		BWAPI::Broodwar->sendText("Fleeing");

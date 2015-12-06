@@ -10,11 +10,7 @@ State::State(bool isWoc, DistanceToEnemy dToE, int noOfEIR, HealthOfUnit hp)
 
 	runStateValue = 0.f;
 	fightStateValue = 0.f;
-}
-
-void State::setRunValue(float value)
-{
-	runStateValue = value;
+	deployMineStateValue = 0.f;
 }
 
 float State::getActionValue(Action action) const
@@ -29,6 +25,10 @@ void State::influenceValue(Action action, float value)
 	{
 		fightStateValue += value;
 	}
+	else if (action == Action::DeployMine)
+	{
+		deployMineStateValue += value;
+	}
 	else
 	{
 		runStateValue += value;
@@ -40,6 +40,16 @@ void State::setFightValue(float value)
 	fightStateValue = value;
 }
 
+void State::setDeployMineValue(float value)
+{
+	deployMineStateValue = value;
+}
+
+void State::setRunValue(float value)
+{
+	runStateValue = value;
+}
+
 float State::getRunValue() const
 {
 	return runStateValue;
@@ -48,6 +58,11 @@ float State::getRunValue() const
 float State::getFightValue() const
 {
 	return fightStateValue;
+}
+
+float State::getDeployMineValue() const
+{
+	return deployMineStateValue;
 }
 
 bool State::operator==(State& state)
@@ -68,8 +83,10 @@ bool State::operator==(const State& state)
 
 Action State::getBestAction() const
 {
-	if (fightStateValue >= runStateValue)
+	if (fightStateValue >= runStateValue && fightStateValue >= deployMineStateValue)
 		return Action::Fight;
+	else if (deployMineStateValue >= runStateValue && deployMineStateValue >= fightStateValue)
+		return Action::DeployMine;
 	else
 		return Action::Run;
 }

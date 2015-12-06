@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <list>
 #include "StateContainer.h"
 #include "BWAPI.h"
 #include "BWAPI\Client.h"
@@ -10,6 +11,7 @@ class Agent
 {
 private:
 	std::vector<State>::iterator currentState;
+	std::list<BWAPI::Unit> spiderMines;
 
 	StateContainer *state_container;
 	BWAPI::Unit thisUnit;
@@ -40,6 +42,7 @@ private:
 	void TakeAction(Action action);
 
 	void Attack();
+	void Deploy();
 	void Flee();
 public:
 	void Update();

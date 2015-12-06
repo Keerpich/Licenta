@@ -21,7 +21,8 @@ enum HealthOfUnit
 
 enum Action 
 {	
-	Fight = 0, 
+	Fight = 0,
+	DeployMine,
 	Run 
 };
 
@@ -37,12 +38,15 @@ private:
 	//expected values
 	float runStateValue;
 	float fightStateValue;
+	float deployMineStateValue;
 
 public:
 	void setRunValue(float value);
 	void setFightValue(float value);
+	void setDeployMineValue(float value);
 	float getRunValue() const;
 	float getFightValue() const;
+	float getDeployMineValue() const;
 	float getActionValue(Action action) const;
 
 	void influenceValue(Action action, float value);
