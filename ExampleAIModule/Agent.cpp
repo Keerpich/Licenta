@@ -2,6 +2,8 @@
 #include <ctime>
 #include <fstream>
 
+#define DEBUG 0
+
 ///<summary>Initializes the agent and it's starting state</summary>
 ///<param name="container">The state container for this type of unit</param>
 ///<param name="unit">The unit that will be handled by this agent</param>
@@ -9,7 +11,7 @@ Agent::Agent(StateContainer *container, BWAPI::Unit unit)
 {
 	thisUnit = unit;
 	state_container = container;
-	currentState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus());
+	currentState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus(), canUseMineNow());
 
 	BWAPI::Unitset allEnemies = BWAPI::Broodwar->enemy()->getUnits();
 
@@ -37,7 +39,7 @@ Agent::Agent(StateContainer *container, BWAPI::Unit unit, float epsilon)
 {
 	thisUnit = unit;
 	state_container = container;
-	currentState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus());
+	currentState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus(), canUseMineNow());
 
 	BWAPI::Unitset allEnemies = BWAPI::Broodwar->enemy()->getUnits();
 
@@ -45,6 +47,7 @@ Agent::Agent(StateContainer *container, BWAPI::Unit unit, float epsilon)
 	currentAction = Action::Fight;
 	learningFactor = 0.05f;
 	explorationEpsilon = epsilon;
+	waitingForMine = false;
 	gammaFactor = 0.9f;
 	framesPassed = 0;
 	framesNeeded = 0;
@@ -77,6 +80,8 @@ Agent& Agent::operator=(Agent &other)
 	this->gammaFactor = other.gammaFactor;
 	this->framesNeeded = other.framesNeeded;
 	this->framesPassed = other.framesPassed;
+	this->waitingForMine = other.waitingForMine;
+	this->allMines = other.allMines;
 
 	return *this;
 }
@@ -224,10 +229,39 @@ void Agent::Deploy()
 	framesNeeded = 0;
 	framesPassed = 0;
 
+#if DEBUG
+	std::ofstream debug_file("p:\\Licenta\\VultureLearning\\debug.txt", std::ios::app);
+	debug_file << "Deploy - Beginning" << endl;
+#endif
+
 	if (thisUnit->canUseTech(BWAPI::TechTypes::Spider_Mines, thisUnit->getPosition()))
 	{
+#if DEBUG
+		debug_file << "Deploy - It can use tech" << endl;
+#endif
 		if (thisUnit->useTech(BWAPI::TechTypes::Spider_Mines, thisUnit->getPosition()))
 		{
+#if DEBUG
+			debug_file << "Deploy - It deployed the mine" << endl;
+#endif
+			Mine thisMine;
+#if DEBUG
+			debug_file << "Deploy - After mine constructor" << endl;
+#endif
+			thisMine.deployedInState = currentState;
+			thisMine.mineId = INT_MIN;
+#if DEBUG
+			debug_file << "Deploy - Initialized mine" << endl;
+#endif
+			waitingForMine = true;
+#if DEBUG
+			debug_file << "Deploy - waiting for mine is true" << endl;
+#endif
+			allMines.push_back(thisMine);
+#if DEBUG
+			debug_file << "Deploy - Added mine to vector" << endl;
+			debug_file.close();
+#endif
 			framesNeeded = 20;
 		}
 	}
@@ -289,16 +323,242 @@ Action Agent::decideOnAction()
 	}
 }
 
+void Agent::GetAllSpiderMines(BWAPI::Unitset &allSpiderMines)
+{
+#if DEBUG
+	std::ofstream debug_file("p:\\Licenta\\VultureLearning\\debug.txt", std::ios::app);
+	debug_file << "GetAllSpiderMines - Beginning" << endl;
+#endif
+	BWAPI::Unitset allMyUnits = thisUnit->getPlayer()->getUnits();
+
+#if DEBUG
+	debug_file << "GetAllSpiderMines - Got the player's units (count: " << allMyUnits.size() << ")" << endl;
+#endif
+
+	for (BWAPI::Unitset::iterator it = allMyUnits.begin(); it != allMyUnits.end(); it++)
+	{
+#if DEBUG
+		debug_file << "GetAllSpiderMines - beginning of the for loop" << endl;
+#endif
+		if ((*it)->getType() == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine && (*it)->exists())
+		{
+#if DEBUG
+			debug_file << "GetAllSpiderMines - this unit is a spider mine" << endl;
+#endif
+			allSpiderMines.insert((*it));
+#if DEBUG
+			debug_file << "GetAllSpiderMines - inserted the spider mine" << endl;
+#endif
+		}
+	}
+
+#if DEBUG
+	debug_file << "GetAllSpiderMines - we got " << allSpiderMines.size() << " spider mines" << endl;
+	debug_file.close();
+#endif
+}
+
+bool Agent::hasAnyMinesNotAdded()
+{
+#if DEBUG
+	std::ofstream debug_file("p:\\Licenta\\VultureLearning\\debug.txt", std::ios::app);
+	debug_file << "hasAnyMinesNotAdded - Beginning" << endl;
+#endif
+
+	if (waitingForMine)
+	{
+#if DEBUG
+		debug_file << "hasAnyMinesNotAdded - waitingForMine is true" << endl;
+#endif
+
+		for (int i = 0; i < allMines.size(); i++)
+		{
+
+#if DEBUG
+			debug_file << "hasAnyMinesNotAdded - Loop number: " << i << endl;
+			debug_file << "hasAnyMinesNotAdded - mineId: " << allMines[i].mineId << endl;
+#endif
+
+			if (allMines[i].mineId == INT_MIN)
+			{
+
+#if DEBUG
+				debug_file << "hasAnyMinesNotAdded - mineId is INT_MIN" << endl;
+#endif
+
+				BWAPI::Unitset allSpiderMines;
+#if DEBUG
+				debug_file << "hasAnyMinesNotAdded - created allSpiderMines" << endl;
+#endif
+				GetAllSpiderMines(allSpiderMines);
+
+#if DEBUG
+				debug_file << "hasAnyMinesNotAdded - Got all spider mines" << endl;
+#endif
+
+				for (auto &unit : allSpiderMines)
+				{
+
+#if DEBUG
+					debug_file << "hasAnyMinesNotAdded - In spider mines auto loop" << endl;
+#endif
+					if (unit->getType() == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine)
+					{
+#if DEBUG
+						debug_file << "hasAnyMinesNotAdded - This unit is a spider mine" << endl;
+#endif
+						bool isRecordedMine = false;
+						for (int j = 0; j < allMines.size(); j++)
+						{
+							isRecordedMine = (allMines[j].mineId == unit->getID());
+						}
+
+
+#if DEBUG
+						debug_file << "hasAnyMinesNotAdded - after the isRecordedMine loop (" << isRecordedMine << ")" << endl;
+#endif
+
+						if (!isRecordedMine)
+						{
+#if DEBUG
+							debug_file << "hasAnyMinesNotAdded - it's not a recorded mine" << endl;
+#endif
+							waitingForMine = false;
+							allMines[i].mineId = unit->getID();
+
+#if DEBUG
+							debug_file << "hasAnyMinesNotAdded - mine's id is now :" << allMines[i].mineId << endl;
+							debug_file.close();
+#endif
+							return false;
+						}
+					}
+				}
+
+
+			}
+		}
+
+#if DEBUG
+		debug_file.close();
+#endif
+		return true;
+	}
+	else
+	{
+#if DEBUG
+		debug_file.close();
+#endif
+		return false;
+	}
+}
+
+void Agent::influenceStateByMineExplosion()
+{
+#if DEBUG
+	if (allMines.size() == 0)
+		return;
+#endif
+
+#if DEBUG
+	std::ofstream debug_file("p:\\Licenta\\VultureLearning\\debug.txt", std::ios::app);
+	debug_file << "influenceStateByMineExplosion - Beginning" << endl;
+#endif
+
+	//check if there are any mines that exploded
+	vector<Mine>::iterator explodedMine = allMines.end();
+
+#if DEBUG
+	debug_file << "influenceStateByMineExplosion - initalized explodedMine" << endl;
+#endif
+	
+	for (explodedMine = allMines.begin(); explodedMine < allMines.end(); explodedMine++)
+	{
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - beginning of for loop" << endl;
+		debug_file << "influenceStateByMineExplosion - looking for mine with it" << explodedMine->mineId << endl;
+#endif
+		BWAPI::Unit currentMine = BWAPI::Broodwar->getUnit(explodedMine->mineId);
+
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - got the unit and it is null(" << (currentMine==nullptr ? "true" : "false") << ")" << endl;
+#endif
+
+		if (currentMine!=nullptr && !BWAPI::Broodwar->getUnit(explodedMine->mineId)->exists())
+		{
+#if DEBUG
+			debug_file << "influenceStateByMineExplosion - found exploded mine with id " << explodedMine->mineId << endl;
+#endif
+			break;
+		}
+	}
+
+#if DEBUG
+	debug_file << "influenceStateByMineExplosion - Checked if mine exploded (" << (explodedMine != allMines.end() ? "true" : "false") << ")" << endl;
+#endif
+
+	//influence the state
+	if (explodedMine != allMines.end())
+	{
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - a mine has exploded" << endl;
+#endif
+		float currentStateActionEstimatedReward = currentState->getActionValue(currentAction);
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - calculated currentStateActionEstimatedReward" << endl;
+#endif
+		auto nextState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus(), canUseMineNow());
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - got nextState" << endl;
+#endif
+		float nextStateMaxReward = nextState->getFightValue() > nextState->getRunValue() ? nextState->getFightValue() : nextState->getRunValue();
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - got nextStateMaxReward" << endl;
+#endif
+		float watkinsReward = learningFactor * (currentReward() + gammaFactor * nextStateMaxReward - currentStateActionEstimatedReward);
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - calculated watkinsReward" << endl;
+#endif
+		explodedMine->deployedInState->influenceValue(Action::DeployMine, watkinsReward);
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - influenced value" << endl;
+#endif
+		//remove the mine from the vector
+		allMines.erase(explodedMine);
+#if DEBUG
+		debug_file << "influenceStateByMineExplosion - erased mine from vector" << endl;
+#endif
+	}
+#if DEBUG
+	debug_file << "influenceStateByMineExplosion - Ending" << endl;
+	debug_file.close();
+#endif
+
+}
+
 ///<summary>Handle this agent's update</summary>
 void Agent::Update()
 {
+#if DEBUG
+	std::ofstream debug_file("p:\\Licenta\\VultureLearning\\debug.txt", std::ios::app);
+	debug_file << "Update - Beginning" << endl;
+	debug_file.close();
+#endif
+
+
+	if (hasAnyMinesNotAdded())
+		return;
+
+	influenceStateByMineExplosion();
+
+
 	if (framesPassed++ < framesNeeded)
 	{
 		return;
 	}
 	float currentStateActionEstimatedReward = currentState->getActionValue(currentAction);
 	
-	auto nextState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus());
+	auto nextState = state_container->getStateByValues(isWeaponOnCooldown(), getDistanceToClosestEnemy(), numberOfEnemiesInRange(), getHealthStatus(), canUseMineNow());
 	float nextStateMaxReward = nextState->getFightValue() > nextState->getRunValue() ? nextState->getFightValue() : nextState->getRunValue();
 
 	float watkinsReward = learningFactor * (currentReward() + gammaFactor * nextStateMaxReward - currentStateActionEstimatedReward);
@@ -315,19 +575,39 @@ void Agent::Update()
 void Agent::TakeAction(Action action)
 {
 	//std::ofstream action_log_file("actions.log");
+#if DEBUG
+	std::ofstream debug_file("p:\\Licenta\\VultureLearning\\debug.txt", std::ios::app);
+#endif
 	if (action == Action::Fight)
 	{
+#if DEBUG
+		debug_file << "TakeAction - Attacking" << endl;
+		debug_file.close();
+#endif
 		BWAPI::Broodwar->sendText("Attacking");
 		Attack();
 	}	
 	else if (action == Action::DeployMine)
 	{
+#if DEBUG
+		debug_file << "TakeAction - Deploying Mine" << endl;
+		debug_file.close();
+#endif
 		BWAPI::Broodwar->sendText("Deploying Mine");
 		Deploy();
 	}
 	else
 	{
+#if DEBUG
+		debug_file << "TakeAction - Fleeing" << endl;
+		debug_file.close();
+#endif
 		BWAPI::Broodwar->sendText("Fleeing");
 		Flee();
 	}
+}
+
+bool Agent::canUseMineNow()
+{
+	return thisUnit->canUseTech(BWAPI::TechTypes::Spider_Mines, thisUnit->getPosition());
 }

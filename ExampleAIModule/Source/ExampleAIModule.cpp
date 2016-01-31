@@ -3,32 +3,67 @@
 #include "../Agent.h"
 #include <fstream>
 
+#define DEBUG 0
+
 using namespace BWAPI;
 using namespace Filter;
 
-StateContainer state_container(8);
+StateContainer state_container(12);
 Agent vultureAgent;
 int ExampleAIModule::roundCount = 0;
 
+#if DEBUG
+std::ofstream debug_file;
+#endif
+
 void ExampleAIModule::onStart()
 {
-	std::ifstream round_file("p:\\Licenta\\VultureLearning\\rnd_count.txt");
+#if DEBUG
+	//std::ofstream debug_file("p:\\Licenta\\VultureLearning\\debug.txt");
+	debug_file.open("p:\\Licenta\\VultureLearning\\debug.txt");
+	debug_file << "onStart - first" << endl;
+#endif
+
+	std::ifstream round_file("p:\\Licenta\\VultureLearning\\rnd_count_spidermine.txt");
 	if (round_file)
 	{
 		round_file >> roundCount;
 		round_file.close();
 	}
+
+#if DEBUG
+	debug_file << "onStart - read from round_file" << endl;
+#endif
+
 	roundCount++;
-	std::ofstream rnd_file("p:\\Licenta\\VultureLearning\\rnd_count.txt");
+	std::ofstream rnd_file("p:\\Licenta\\VultureLearning\\rnd_count_spidermine.txt");
 	rnd_file << roundCount;
+
+#if DEBUG
+	debug_file << "onStart - written to round_file" << endl;
+#endif
 
 	BWAPI::Broodwar->enableFlag(BWAPI::Flag::CompleteMapInformation);
 	BWAPI::Broodwar->setLocalSpeed(0);
 
 	Broodwar->sendText("Round Count: %i", roundCount);
 
+#if DEBUG
+	debug_file << "onStart - did setLocalSpeed" << endl;
+#endif
+
 	Unitset units = Broodwar->self()->getUnits();
+
+#if DEBUG
+	debug_file << "onStart - got all units" << endl;
+#endif
+
 	Unit vultureUnit;
+
+#if DEBUG
+	debug_file << "onStart - created vultureUnit" << endl;
+#endif
+
 	for (auto& u : units)
 	{
 		int id = (*units.begin())->getID();
@@ -37,10 +72,19 @@ void ExampleAIModule::onStart()
 			break;
 	}
 
+#if DEBUG
+	debug_file << "onStart - got the vulture unit" << endl;
+#endif
+
 	if (roundCount > 1000)
 		vultureAgent = Agent(&state_container, vultureUnit, 0.f);
 	else
 		vultureAgent = Agent(&state_container, vultureUnit, 100 - (roundCount / 10.f));
+
+#if DEBUG
+	debug_file << "onStart - assigned the new found vulture unit" << endl;
+	debug_file.close();
+#endif
 
   // Set the command optimization level so that common commands can be grouped
   // and reduce the bot's APM (Actions Per Minute).
@@ -81,6 +125,12 @@ void ExampleAIModule::onStart()
 void ExampleAIModule::onEnd(bool isWinner)
 {
 
+	std::ofstream hasWon("p:\\Licenta\\VultureLearning\\win_cound_spidermine.txt", std::ios_base::app);
+	if (isWinner)
+		hasWon << 1 << " ";
+	else
+		hasWon << 0 << " ";
+
 	Broodwar->sendText(isWinner ? "You have won" : "You have lost");
 	//Save the Q-Learning graph
 	state_container.SaveStates();
@@ -101,6 +151,7 @@ void ExampleAIModule::onFrame()
 
 	if (vultureAgent.isInitialized())
 		vultureAgent.Update();
+
 }
 
 void ExampleAIModule::onSendText(std::string text)

@@ -1,17 +1,27 @@
 #pragma once
 #include <vector>
 #include <list>
+#include <limits>
 #include "StateContainer.h"
 #include "BWAPI.h"
 #include "BWAPI\Client.h"
 #include "Vector2.h"
 
-
 class Agent
 {
 private:
+	struct Mine
+	{
+		int mineId;
+		std::vector<State>::iterator deployedInState;
+	};
+
+	vector<Mine> allMines;
+
 	std::vector<State>::iterator currentState;
 	std::list<BWAPI::Unit> spiderMines;
+
+	bool waitingForMine;
 
 	StateContainer *state_container;
 	BWAPI::Unit thisUnit;
@@ -27,6 +37,11 @@ private:
 
 	int lastHpDifference;
 
+	void Agent::GetAllSpiderMines(BWAPI::Unitset &spiderMines);
+	void influenceStateByMineExplosion();
+
+	bool canUseMineNow();
+
 	DistanceToEnemy getDistanceToClosestEnemy();
 
 	BWAPI::Unit getClosestEnemy();
@@ -35,6 +50,8 @@ private:
 	bool isWeaponOnCooldown();
 	int numberOfEnemiesInRange();
 	BWAPI::Unitset getEnemiesInRange();
+
+	bool hasAnyMinesNotAdded();
 
 	Action decideOnAction();
 	int currentReward();

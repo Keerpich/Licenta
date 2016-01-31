@@ -10,7 +10,7 @@ class StateContainer
 private:
 	vector<State> states;
 
-	const string filename = "p:\\Licenta\\VultureLearning\\xp.dat";
+	const string filename = "p:\\Licenta\\VultureLearning\\xp_spidermine.dat";
 	int maxNumberOfUnits;
 
 	//vector<State>::iterator currentState;
@@ -22,7 +22,7 @@ public:
 	void SaveStates();
 	~StateContainer();
 
-	std::vector<State>::iterator getStateByValues(bool weaponOnCooldown, DistanceToEnemy dte, int numberOfUnitsInRadius, HealthOfUnit hou);
+	std::vector<State>::iterator getStateByValues(bool weaponOnCooldown, DistanceToEnemy dte, int numberOfUnitsInRadius, HealthOfUnit hou, bool mineAvail);
 	std::vector<State>::iterator getStateByValues(State &s);
 	//void setCurrentState(bool wCooldown, DistanceToEnemy dte, int nouir, HealthOfUnit hou);
 };

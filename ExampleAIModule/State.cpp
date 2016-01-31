@@ -1,12 +1,13 @@
 #include "State.h"
 
 
-State::State(bool isWoc, DistanceToEnemy dToE, int noOfEIR, HealthOfUnit hp)
+State::State(bool isWoc, DistanceToEnemy dToE, int noOfEIR, HealthOfUnit hp, bool mineAvail)
 {
 	isWeaponOnCooldown = isWoc;
 	distanceToClosestEnemy = dToE;
 	enemiesInRange = noOfEIR;
 	agentHealth = hp;
+	canUseMine = mineAvail;
 
 	runStateValue = 0.f;
 	fightStateValue = 0.f;
@@ -70,7 +71,8 @@ bool State::operator==(State& state)
 	return state.isWeaponOnCooldown == isWeaponOnCooldown &&
 		state.distanceToClosestEnemy == distanceToClosestEnemy &&
 		state.enemiesInRange == enemiesInRange &&
-		state.agentHealth == agentHealth;
+		state.agentHealth == agentHealth &&
+		state.canUseMine == canUseMine;
 }
 
 bool State::operator==(const State& state)
@@ -78,7 +80,8 @@ bool State::operator==(const State& state)
 	return state.isWeaponOnCooldown == isWeaponOnCooldown &&
 		state.distanceToClosestEnemy == distanceToClosestEnemy &&
 		state.enemiesInRange == enemiesInRange &&
-		state.agentHealth == agentHealth;
+		state.agentHealth == agentHealth &&
+		state.canUseMine == canUseMine;
 }
 
 Action State::getBestAction() const

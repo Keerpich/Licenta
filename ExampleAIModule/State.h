@@ -34,6 +34,7 @@ private:
 	DistanceToEnemy distanceToClosestEnemy;
 	int enemiesInRange; //number of enemy units in range of weapon
 	HealthOfUnit agentHealth;
+	bool canUseMine;
 
 	//expected values
 	float runStateValue;
@@ -53,7 +54,7 @@ public:
 
 	Action getBestAction() const;
 
-	State(bool, DistanceToEnemy, int, HealthOfUnit);
+	State(bool, DistanceToEnemy, int, HealthOfUnit, bool);
 	~State();
 
 	bool operator==(State& s);
