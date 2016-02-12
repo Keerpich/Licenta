@@ -5,10 +5,13 @@
 
 #define DEBUG 0
 
+#define NUMBER_OF_TURNS 500
+#define NUMBER_OF_ENEMIES 12
+
 using namespace BWAPI;
 using namespace Filter;
 
-StateContainer state_container(12);
+StateContainer state_container(NUMBER_OF_ENEMIES);
 Agent vultureAgent;
 int ExampleAIModule::roundCount = 0;
 
@@ -76,10 +79,10 @@ void ExampleAIModule::onStart()
 	debug_file << "onStart - got the vulture unit" << endl;
 #endif
 
-	if (roundCount > 1000)
+	if (roundCount > NUMBER_OF_TURNS)
 		vultureAgent = Agent(&state_container, vultureUnit, 0.f);
 	else
-		vultureAgent = Agent(&state_container, vultureUnit, 100 - (roundCount / 10.f));
+		vultureAgent = Agent(&state_container, vultureUnit, 100.f - ((float)roundCount * 100.f / NUMBER_OF_TURNS));
 
 #if DEBUG
 	debug_file << "onStart - assigned the new found vulture unit" << endl;
