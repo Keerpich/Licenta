@@ -6,20 +6,26 @@
 using namespace BWAPI;
 using namespace Filter;
 
-StateContainer state_container(8);
+#define NUMBER_OF_ENEMIES 12
+#define NUMBER_OF_TURNS 1000
+
+#define ROUND_COUNT_FILE "p:\\Licenta\\VultureLearning\\rnd_count_1000.txt"
+#define WIN_COUNT_FILE "p:\\Licenta\\VultureLearning\\win_count_1000.txt"
+
+StateContainer state_container(NUMBER_OF_ENEMIES);
 Agent vultureAgent;
 int ExampleAIModule::roundCount = 0;
 
 void ExampleAIModule::onStart()
 {
-	std::ifstream round_file("p:\\Licenta\\VultureLearning\\rnd_count.txt");
+	std::ifstream round_file(ROUND_COUNT_FILE);
 	if (round_file)
 	{
 		round_file >> roundCount;
 		round_file.close();
 	}
 	roundCount++;
-	std::ofstream rnd_file("p:\\Licenta\\VultureLearning\\rnd_count.txt");
+	std::ofstream rnd_file(ROUND_COUNT_FILE);
 	rnd_file << roundCount;
 
 	BWAPI::Broodwar->enableFlag(BWAPI::Flag::CompleteMapInformation);
@@ -37,10 +43,10 @@ void ExampleAIModule::onStart()
 			break;
 	}
 
-	if (roundCount > 1000)
+	if (roundCount > NUMBER_OF_TURNS)
 		vultureAgent = Agent(&state_container, vultureUnit, 0.f);
 	else
-		vultureAgent = Agent(&state_container, vultureUnit, 100 - (roundCount / 10.f));
+		vultureAgent = Agent(&state_container, vultureUnit, 100.f - ((float)roundCount * 100.f / NUMBER_OF_TURNS));
 
   // Set the command optimization level so that common commands can be grouped
   // and reduce the bot's APM (Actions Per Minute).
@@ -81,7 +87,12 @@ void ExampleAIModule::onStart()
 void ExampleAIModule::onEnd(bool isWinner)
 {
 
-	Broodwar->sendText(isWinner ? "You have won" : "You have lost");
+	std::ofstream hasWon(WIN_COUNT_FILE, std::ios_base::app);
+	if (isWinner)
+		hasWon << 1 << " ";
+	else
+		hasWon << 0 << " ";
+
 	//Save the Q-Learning graph
 	state_container.SaveStates();
 	//Restart the map

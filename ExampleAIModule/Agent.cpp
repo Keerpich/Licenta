@@ -302,12 +302,12 @@ void Agent::TakeAction(Action action)
 	//std::ofstream action_log_file("actions.log");
 	if (action == Action::Fight)
 	{
-		BWAPI::Broodwar->sendText("Attacking");
+		//BWAPI::Broodwar->sendText("Attacking");
 		Attack();
 	}	
 	else
 	{
-		BWAPI::Broodwar->sendText("Fleeing");
+		//BWAPI::Broodwar->sendText("Fleeing");
 		Flee();
 	}
 }
