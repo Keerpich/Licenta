@@ -583,8 +583,8 @@ void Agent::TakeAction(Action action)
 #if DEBUG
 		debug_file << "TakeAction - Attacking" << endl;
 		debug_file.close();
-#endif
 		BWAPI::Broodwar->sendText("Attacking");
+#endif
 		Attack();
 	}	
 	else if (action == Action::DeployMine)
@@ -592,8 +592,8 @@ void Agent::TakeAction(Action action)
 #if DEBUG
 		debug_file << "TakeAction - Deploying Mine" << endl;
 		debug_file.close();
-#endif
 		BWAPI::Broodwar->sendText("Deploying Mine");
+#endif
 		Deploy();
 	}
 	else
@@ -601,8 +601,8 @@ void Agent::TakeAction(Action action)
 #if DEBUG
 		debug_file << "TakeAction - Fleeing" << endl;
 		debug_file.close();
-#endif
 		BWAPI::Broodwar->sendText("Fleeing");
+#endif
 		Flee();
 	}
 }
