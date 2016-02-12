@@ -7,6 +7,8 @@
 
 #define NUMBER_OF_TURNS 500
 #define NUMBER_OF_ENEMIES 12
+#define ROUND_COUNT_FILE "p:\\Licenta\\VultureLearning\\rnd_count_sm_12_500.txt"
+#define STATS_FILE "p:\\Licenta\\VultureLearning\\win_count_sm_12_500.txt"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -27,7 +29,7 @@ void ExampleAIModule::onStart()
 	debug_file << "onStart - first" << endl;
 #endif
 
-	std::ifstream round_file("p:\\Licenta\\VultureLearning\\rnd_count_spidermine.txt");
+	std::ifstream round_file(ROUND_COUNT_FILE);
 	if (round_file)
 	{
 		round_file >> roundCount;
@@ -39,7 +41,7 @@ void ExampleAIModule::onStart()
 #endif
 
 	roundCount++;
-	std::ofstream rnd_file("p:\\Licenta\\VultureLearning\\rnd_count_spidermine.txt");
+	std::ofstream rnd_file(ROUND_COUNT_FILE);
 	rnd_file << roundCount;
 
 #if DEBUG
@@ -128,7 +130,7 @@ void ExampleAIModule::onStart()
 void ExampleAIModule::onEnd(bool isWinner)
 {
 
-	std::ofstream hasWon("p:\\Licenta\\VultureLearning\\win_cound_spidermine.txt", std::ios_base::app);
+	std::ofstream hasWon(STATS_FILE, std::ios_base::app);
 	if (isWinner)
 		hasWon << 1 << " ";
 	else

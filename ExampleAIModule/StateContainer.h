@@ -10,7 +10,7 @@ class StateContainer
 private:
 	vector<State> states;
 
-	const string filename = "p:\\Licenta\\VultureLearning\\xp_spidermine.dat";
+	const string filename = "p:\\Licenta\\VultureLearning\\xp_spidermine_500.dat";
 	int maxNumberOfUnits;
 
 	//vector<State>::iterator currentState;
