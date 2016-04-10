@@ -6,11 +6,11 @@
 using namespace BWAPI;
 using namespace Filter;
 
-#define NUMBER_OF_ENEMIES 12
-#define NUMBER_OF_TURNS 1000
+#define NUMBER_OF_ENEMIES 6
+#define NUMBER_OF_TURNS 500
 
-#define ROUND_COUNT_FILE "p:\\Licenta\\VultureLearning\\rnd_count_1000.txt"
-#define WIN_COUNT_FILE "p:\\Licenta\\VultureLearning\\win_count_1000.txt"
+#define ROUND_COUNT_FILE "p:\\Licenta\\VultureLearning\\rnd_count_500_benchmark.txt"
+#define WIN_COUNT_FILE "p:\\Licenta\\VultureLearning\\win_count_500_benchmark.txt"
 
 StateContainer state_container(NUMBER_OF_ENEMIES);
 Agent vultureAgent;
