@@ -6,15 +6,16 @@
 using namespace BWAPI;
 using namespace Filter;
 
-#define NUMBER_OF_ENEMIES 6
+#define NUMBER_OF_ENEMIES 12
 #define NUMBER_OF_TURNS 500
 
-#define ROUND_COUNT_FILE "p:\\Licenta\\VultureLearning\\rnd_count_500_benchmark.txt"
-#define WIN_COUNT_FILE "p:\\Licenta\\VultureLearning\\win_count_500_benchmark.txt"
+#define ROUND_COUNT_FILE "p:\\Licenta\\VultureLearning\\WinCount500\\rnd_count_500.txt"
+#define WIN_COUNT_FILE "p:\\Licenta\\VultureLearning\\WinCount500\\win_count_500"
 
 StateContainer state_container(NUMBER_OF_ENEMIES);
 Agent vultureAgent;
 int ExampleAIModule::roundCount = 0;
+int ExampleAIModule::precisionRun = 0;
 
 void ExampleAIModule::onStart()
 {
@@ -22,16 +23,26 @@ void ExampleAIModule::onStart()
 	if (round_file)
 	{
 		round_file >> roundCount;
+		round_file >> precisionRun;
 		round_file.close();
 	}
 	roundCount++;
+
+	if (roundCount > NUMBER_OF_TURNS)
+	{
+		precisionRun++;
+		roundCount = 0;
+		remove("p:\\Licenta\\VultureLearning\\WinCount500\\xp_500.dat");
+	}
+
 	std::ofstream rnd_file(ROUND_COUNT_FILE);
-	rnd_file << roundCount;
+	rnd_file << roundCount << " " << precisionRun;
 
 	BWAPI::Broodwar->enableFlag(BWAPI::Flag::CompleteMapInformation);
 	BWAPI::Broodwar->setLocalSpeed(0);
+	BWAPI::Broodwar->setFrameSkip(1000000);
 
-	Broodwar->sendText("Round Count: %i", roundCount);
+	Broodwar->sendText("Round Count: %i -- Precision Run: %i", roundCount, precisionRun);
 
 	Unitset units = Broodwar->self()->getUnits();
 	Unit vultureUnit;
@@ -86,8 +97,8 @@ void ExampleAIModule::onStart()
 
 void ExampleAIModule::onEnd(bool isWinner)
 {
-
-	std::ofstream hasWon(WIN_COUNT_FILE, std::ios_base::app);
+	std::string winCountFile = std::string(WIN_COUNT_FILE) + "_" + std::to_string(ExampleAIModule::precisionRun) + ".txt";
+	std::ofstream hasWon(winCountFile, std::ios_base::app);
 	if (isWinner)
 		hasWon << 1 << " ";
 	else

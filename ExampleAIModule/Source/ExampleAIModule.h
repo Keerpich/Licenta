@@ -7,6 +7,7 @@ class ExampleAIModule : public BWAPI::AIModule
 {
 public:
 	static int roundCount;
+	static int precisionRun;
 
   // Virtual functions for callbacks, leave these as they are.
   virtual void onStart();
